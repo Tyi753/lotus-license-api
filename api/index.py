@@ -1,47 +1,77 @@
 import json
 import os
-from datetime import datetime, timedelta
-from supabase import create_client, Client
+from datetime import datetime
+from http.server import BaseHTTPRequestHandler
+from supabase import create_client
 
-# 初始化 Supabase 客户端
-supabase_url = os.environ.get("SUPABASE_URL")
-supabase_key = os.environ.get("SUPABASE_KEY")
-supabase: Client = create_client(supabase_url, supabase_key)
-
-def handler(event, context):
-    # 只允许 POST 请求
-    if event.get('requestContext', {}).get('http', {}).get('method') != 'POST':
-        return {"statusCode": 405, "body": json.dumps({"error": "Method not allowed"})}
+class handler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        try:
+            # 初始化 Supabase 客户端
+            supabase_url = os.environ.get("SUPABASE_URL")
+            supabase_key = os.environ.get("SUPABASE_KEY")
+            supabase = create_client(supabase_url, supabase_key)
+            
+            # 读取请求体
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            data = json.loads(body)
+            
+            license_key = data.get('license_key')
+            hwid = data.get('hwid')
+            
+            if not license_key or not hwid:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Missing license_key or hwid"}).encode())
+                return
+            
+            # 查询数据库
+            response = supabase.table("licenses").select("*").eq("license_key", license_key).execute()
+            
+            if not response.data:
+                self.send_response(404)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Invalid license key"}).encode())
+                return
+            
+            record = response.data[0]
+            
+            # 验证硬件指纹
+            if record['hwid'] != hwid:
+                self.send_response(403)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Hardware mismatch"}).encode())
+                return
+            
+            # 验证状态
+            if record['status'] != 'active':
+                self.send_response(403)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "License blocked"}).encode())
+                return
+            
+            # 更新最后验证时间
+            supabase.table("licenses").update({"last_verify": datetime.utcnow().isoformat()}).eq("license_key", license_key).execute()
+            
+            # 返回成功
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "valid", "message": "License verified"}).encode())
+            
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode())
     
-    try:
-        # 解析请求体
-        body = json.loads(event.get('body', '{}'))
-        license_key = body.get('license_key')
-        hwid = body.get('hwid')
-        
-        if not license_key or not hwid:
-            return {"statusCode": 400, "body": json.dumps({"error": "Missing license_key or hwid"})}
-        
-        # 查询数据库
-        response = supabase.table("licenses").select("*").eq("license_key", license_key).execute()
-        
-        if not response.data:
-            return {"statusCode": 404, "body": json.dumps({"error": "Invalid license key"})}
-        
-        record = response.data[0]
-        
-        # 验证硬件指纹
-        if record['hwid'] != hwid:
-            return {"statusCode": 403, "body": json.dumps({"error": "Hardware mismatch"})}
-        
-        # 验证状态
-        if record['status'] != 'active':
-            return {"statusCode": 403, "body": json.dumps({"error": "License blocked"})}
-        
-        # 更新最后验证时间
-        supabase.table("licenses").update({"last_verify": datetime.utcnow().isoformat()}).eq("license_key", license_key).execute()
-        
-        return {"statusCode": 200, "body": json.dumps({"status": "valid", "message": "License verified"})}
-        
-    except Exception as e:
-        return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
+    def do_GET(self):
+        self.send_response(405)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(json.dumps({"error": "Method not allowed"}).encode())

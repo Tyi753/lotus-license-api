@@ -1,0 +1,6 @@
+[project]
+name = "lotus-license-api"
+version = "1.0.0"
+description = "Lotus License Verification API"
+requires-python = ">=3.12"
+dependencies = []

@@ -1,2 +1,1 @@
-supabase==2.0.3
-python-dotenv==1.0.0
+# 不需要 supabase 库了

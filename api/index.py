@@ -7,9 +7,30 @@ from supabase import create_client
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
-            # 初始化 Supabase 客户端
+            # 读取环境变量
             supabase_url = os.environ.get("SUPABASE_URL")
             supabase_key = os.environ.get("SUPABASE_KEY")
+            
+            # 调试：检查环境变量
+            if not supabase_url:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "SUPABASE_URL is missing"}).encode())
+                return
+            
+            if not supabase_key:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "SUPABASE_KEY is missing"}).encode())
+                return
+            
+            # 调试：显示密钥的前几位（生产环境不要这样做，仅用于调试）
+            # print(f"DEBUG: URL={supabase_url[:20]}...")
+            # print(f"DEBUG: Key={supabase_key[:20]}...")
+            
+            # 初始化 Supabase 客户端
             supabase = create_client(supabase_url, supabase_key)
             
             # 读取请求体

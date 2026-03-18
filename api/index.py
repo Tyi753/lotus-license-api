@@ -155,17 +155,8 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": "License blocked"}).encode())
                 return
             
-            # ========== 更新最后验证时间 ==========
-            update_url = f"{supabase_url}/rest/v1/licenses"
-            update_data = json.dumps({"last_verify": datetime.utcnow().isoformat()}).encode()
-            update_req = urllib.request.Request(update_url, data=update_data, method='PATCH')
-            update_req.add_header('apikey', supabase_key)
-            update_req.add_header('Authorization', f'Bearer {supabase_key}')
-            update_req.add_header('Content-Type', 'application/json')
-            update_req.add_header('Prefer', 'return=minimal')
-            urllib.request.urlopen(update_req, timeout=10)
-            
             # ========== 返回成功 ==========
+            # （移除了更新 last_verify 的操作，避免 400 错误）
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()

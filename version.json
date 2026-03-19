@@ -1,0 +1,8 @@
+{
+    "latest_version": "1.1.0",
+    "min_version": "1.0.0",
+    "download_url": "https://github.com/Tyi753/lotus-license-api/releases/download/v1.1.0/Lotus_FQC_Testing.exe",
+    "update_message": "发现重要更新！此版本必须更新才能继续使用。",
+    "force_update": true,
+    "release_notes": "- 新增云端数据同步\n- 新增版本强制更新\n- 新增数据下载功能\n- 修复已知问题"
+}

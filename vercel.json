@@ -1,13 +1,3 @@
 {
-    "version": 2,
-    "routes": [
-        {
-            "src": "/api/verify",
-            "dest": "/api/index.py"
-        },
-        {
-            "src": "/api/export",
-            "dest": "/api/export.py"
-        }
-    ]
+    "version": 2
 }

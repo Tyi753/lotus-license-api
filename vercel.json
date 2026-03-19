@@ -1,13 +1,5 @@
 {
     "version": 2,
-    "functions": {
-        "api/index.py": {
-            "runtime": "@vercel/python@3.12"
-        },
-        "api/export.py": {
-            "runtime": "@vercel/python@3.12"
-        }
-    },
     "routes": [
         {
             "src": "/api/verify",
